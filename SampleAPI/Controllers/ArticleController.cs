@@ -32,6 +32,11 @@ public class ArticleController : ControllerBase
     }
 
     // GET: api/Article/5
+    /// <summary>
+    /// 取得特定一筆文章
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     public async Task<ActionResult<Article>> GetArticle(int id)
     {
