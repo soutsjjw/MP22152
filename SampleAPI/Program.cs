@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Rewrite;
 using SampleAPI.Class;
 using SampleAPI.Interface;
@@ -54,6 +55,36 @@ builder.Services.AddDbContext<BlogContext>(options =>
 });
 builder.Services.AddTransient<IArticleRepository, ArticleRepository>();
 
+builder.Services.AddCors(options => 
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.WithOrigins("http://www.sample.com", "http://www.demo.com")
+            // 設定字網域成為原始的來源
+            .SetIsOriginAllowedToAllowWildcardSubdomains()
+            // 允許所有 Request Header
+            .AllowAnyHeader()
+            // 允許所有 Http Method
+            .AllowAnyMethod();
+    });
+
+    options.AddPolicy(
+        name: "CustomPolicy1",
+        builder =>
+        {
+            builder.WithOrigins("http://www.sample.com", "http://www.demo.com");
+        }
+    );
+
+    options.AddPolicy(
+        name: "CustomPolicy2",
+        builder =>
+        {
+            builder.WithOrigins("http://www.homepage.com");
+        }
+    );
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -69,6 +100,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("CustomPolicy1");
+
 app.UseAuthorization();
 
 app.MapControllers();
@@ -77,5 +110,15 @@ app.UseRewriter(new RewriteOptions()
     .AddRewrite("Post.aspx", "WeatherForecast", skipRemainingRules: true)
     .AddRedirect("Post.php", "WeatherForecast", 301)
     .AddRedirect("WeatherForecast/(.*)/(.*)", "WeatherForecast?id=$1&id2=$2", 301));
+
+app.MapGet("/ep1", [EnableCors("allowAny")](HttpContext context) =>
+{
+    return "hello ep1";
+});
+
+app.MapGet("/ep2", (HttpContext context) =>
+{
+    return "hello ep2";
+}).RequireCors("CustomPolicy1");
 
 app.Run();
