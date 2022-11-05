@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SampleAPI.Controllers
@@ -21,7 +22,20 @@ namespace SampleAPI.Controllers
 
     public class DemoUser
     {
+        [Required]
+        [StringLength(6, ErrorMessage = "名字長度必須介於 {2} 到 {1} 個字", MinimumLength =2)]
         public string Name { get; set; } = default!;
+
+        [Range(5, 50)]
         public int Age { get; set; }
+
+        [Required(ErrorMessage = "Email 為必填")]
+        [EmailAddress]
+        public string Email { get; set; } = default!;
+
+        public string Password { get; set; } = default!;
+
+        [Compare("Password")]
+        public string ConfirmPassword { get; set; } = default!;
     }
 }
