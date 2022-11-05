@@ -22,6 +22,7 @@ Log.Logger = new LoggerConfiguration()
             // 讓所有紀錄事件加入特定的屬性，需要加上這行後續才能使用 LogContext
             .Enrich.FromLogContext()
             .WriteTo.Console()
+            .WriteTo.Seq("http://localhost:5431")
             // 輸出的檔案類型與位置，可以加入 rollingInterval 設定在檔名的末端加入時間
             .WriteTo.File("./Logs/log-.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();
