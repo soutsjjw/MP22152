@@ -1,8 +1,10 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Rewrite;
 using SampleAPI.Class;
+using SampleAPI.Filters;
 using SampleAPI.Interface;
 using SampleAPI.Models;
 using SampleAPI.Repository;
@@ -12,15 +14,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        // 將 NULL 的項目都忽略掉
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-    });
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<HttpResponseExceptionFilter>();
+})
+.AddJsonOptions(options =>
+{
+    // 將 NULL 的項目都忽略掉
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => 
+builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
@@ -42,6 +47,8 @@ builder.Services.AddSwaggerGen(options =>
 
     var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFileName));
+
+    options.DocumentFilter<HiddenAPIFilter>();
 });
 
 builder.Services.AddScoped<IScoped, SampleClass>();
@@ -55,7 +62,7 @@ builder.Services.AddDbContext<BlogContext>(options =>
 });
 builder.Services.AddTransient<IArticleRepository, ArticleRepository>();
 
-builder.Services.AddCors(options => 
+builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
@@ -97,6 +104,35 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = string.Empty;
     });
 }
+else
+{
+    // app.UseExceptionHandler("/error");
+
+    app.UseExceptionHandler(exceptionHandlerApp =>
+    {
+        exceptionHandlerApp.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+            context.Response.ContentType = System.Net.Mime.MediaTypeNames.Text.Plain;
+
+            await context.Response.WriteAsync("拋出一個Exception");
+
+            var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+
+            if (exceptionHandlerPathFeature?.Error is FileNotFoundException)
+            {
+                await context.Response.WriteAsync("找不到檔案");
+            }
+
+            if (exceptionHandlerPathFeature?.Path == "/")
+            {
+                await context.Response.WriteAsync(" Page: Home.");
+            }
+        });
+    });
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
 
@@ -111,7 +147,7 @@ app.UseRewriter(new RewriteOptions()
     .AddRedirect("Post.php", "WeatherForecast", 301)
     .AddRedirect("WeatherForecast/(.*)/(.*)", "WeatherForecast?id=$1&id2=$2", 301));
 
-app.MapGet("/ep1", [EnableCors("allowAny")](HttpContext context) =>
+app.MapGet("/ep1", [EnableCors("allowAny")] (HttpContext context) =>
 {
     return "hello ep1";
 });
