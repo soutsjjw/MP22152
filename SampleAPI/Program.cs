@@ -14,6 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+// 移除所有 ILoggerProvider 實例
+builder.Logging.ClearProviders();
+// 加入 Console 的 Log Provider
+builder.Logging.AddConsole();
+
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<HttpResponseExceptionFilter>();
