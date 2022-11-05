@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Rewrite;
 using SampleAPI.Class;
 using SampleAPI.Interface;
 using SampleAPI.Models;
@@ -71,5 +72,10 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseRewriter(new RewriteOptions()
+    .AddRewrite("Post.aspx", "WeatherForecast", skipRemainingRules: true)
+    .AddRedirect("Post.php", "WeatherForecast", 301)
+    .AddRedirect("WeatherForecast/(.*)/(.*)", "WeatherForecast?id=$1&id2=$2", 301));
 
 app.Run();
