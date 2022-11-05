@@ -1,3 +1,7 @@
+using SampleAPI.Class;
+using SampleAPI.Interface;
+using SampleAPI.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -6,6 +10,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<IScoped, SampleClass>();
+builder.Services.AddSingleton<ISingleton, SampleClass>();
+builder.Services.AddTransient<ITransient, SampleClass>();
+builder.Services.AddScoped<SampleService, SampleService>();
 
 var app = builder.Build();
 
