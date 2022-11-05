@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SampleAPI.Models;
+using SampleAPI.Repository;
 
 namespace SampleAPI.Controllers;
 
@@ -16,33 +17,25 @@ dotnet aspnet-codegenerator controller --controllerName ArticleController -async
 [ApiController]
 public class ArticleController : ControllerBase
 {
-    private readonly BlogContext _context;
+    private readonly IArticleRepository _articleRepository;
 
-    public ArticleController(BlogContext context)
+    public ArticleController(IArticleRepository articleRepository)
     {
-        _context = context;
+        _articleRepository = articleRepository;
     }
 
     // GET: api/Article
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Article>>> GetArticles()
+    public async Task<IEnumerable<Article>> GetArticles()
     {
-        if (_context.Articles == null)
-        {
-            return NotFound();
-        }
-        return await _context.Articles.ToListAsync();
+        return await _articleRepository.GetAllAsync();
     }
 
     // GET: api/Article/5
     [HttpGet("{id}")]
     public async Task<ActionResult<Article>> GetArticle(int id)
     {
-        if (_context.Articles == null)
-        {
-            return NotFound();
-        }
-        var article = await _context.Articles.FindAsync(id);
+        var article = await _articleRepository.GetAsync(id);
 
         if (article == null)
         {
@@ -62,15 +55,13 @@ public class ArticleController : ControllerBase
             return BadRequest();
         }
 
-        _context.Entry(article).State = EntityState.Modified;
-
         try
         {
-            await _context.SaveChangesAsync();
+            _articleRepository.UpdateAsync(article);
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!ArticleExists(id))
+            if (!(await ArticleExistsAsync(id)))
             {
                 return NotFound();
             }
@@ -86,14 +77,11 @@ public class ArticleController : ControllerBase
     // POST: api/Article
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Article>> PostArticle(Article article)
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<Article> PostArticle(Article article)
     {
-        if (_context.Articles == null)
-        {
-            return Problem("Entity set 'BlogContext.Articles'  is null.");
-        }
-        _context.Articles.Add(article);
-        await _context.SaveChangesAsync();
+        _articleRepository.Create(article);
 
         return CreatedAtAction("GetArticle", new { id = article.Id }, article);
     }
@@ -102,24 +90,19 @@ public class ArticleController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteArticle(int id)
     {
-        if (_context.Articles == null)
-        {
-            return NotFound();
-        }
-        var article = await _context.Articles.FindAsync(id);
+        var article = await _articleRepository.GetAsync(id);
         if (article == null)
         {
             return NotFound();
         }
 
-        _context.Articles.Remove(article);
-        await _context.SaveChangesAsync();
+        _articleRepository.DeleteAsync(article);
 
         return NoContent();
     }
 
-    private bool ArticleExists(int id)
+    private async Task<bool> ArticleExistsAsync(int id)
     {
-        return (_context.Articles?.Any(e => e.Id == id)).GetValueOrDefault();
+        return await _articleRepository.GetAsync(id) != null;
     }
 }

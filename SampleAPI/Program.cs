@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using SampleAPI.Class;
 using SampleAPI.Interface;
 using SampleAPI.Models;
+using SampleAPI.Repository;
 using SampleAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,7 @@ builder.Services.AddDbContext<BlogContext>(options =>
 {
     options.EnableSensitiveDataLogging();
 });
+builder.Services.AddTransient<IArticleRepository, ArticleRepository>();
 
 var app = builder.Build();
 
