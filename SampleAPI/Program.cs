@@ -119,6 +119,13 @@ try
 
     builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
 
+    builder.Services.AddMemoryCache();
+    builder.Services.AddDistributedRedisCache(options =>
+    {
+        options.Configuration = "127.0.0.1:6379,password=P@ssw0rd";
+        options.InstanceName = "DockerRedis.";
+    });
+
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
