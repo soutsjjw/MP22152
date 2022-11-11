@@ -125,6 +125,15 @@ try
         options.Configuration = "127.0.0.1:6379,password=P@ssw0rd";
         options.InstanceName = "DockerRedis.";
     });
+    builder.Services.AddResponseCaching(options =>
+    {
+        // Response 主體的最大可快取大小（以位元組為單位）。預設值為 64 * 1024 * 1024 (64MB)
+        options.MaximumBodySize = 1024;
+        // Response 快取 Middleware 的大小限制（以位元組為單位）。預設值為 100 * 1024 * 1024 (100MB)
+        options.SizeLimit = 1024;
+        // 判斷是否要在區分大小寫的路徑上快取 Response。預設值是 false。
+        options.UseCaseSensitivePaths = true;
+    });
 
     var app = builder.Build();
 
@@ -191,6 +200,20 @@ try
         }
 
         return next(context);
+    });
+
+    app.UseResponseCaching();
+    app.Use(async (context, next) =>
+    {
+        context.Response.GetTypedHeaders().CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
+        {
+            Public = true,
+            MaxAge = TimeSpan.FromSeconds(10),
+        };
+
+        context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Vary] = new string[] { "Accept-Encoding" };
+
+        await next();
     });
 
     app.MapControllers();
