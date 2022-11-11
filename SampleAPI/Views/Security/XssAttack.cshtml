@@ -1,0 +1,30 @@
+﻿@model string
+@{
+    ViewData["Title"] = "Xss 攻擊";
+}
+@Html.Raw(Model)
+
+<h1>@ViewData["Title"]</h1>
+
+@if (ViewData["html"] != null)
+{
+    @Html.Raw(ViewData["html"]);
+    <br />
+}
+
+@if (ViewData["js"] != null)
+{
+    @Html.Raw(ViewData["js"]);
+    <br />
+}
+
+@if (ViewData["url"] != null)
+{
+    @Html.Raw(ViewData["url"]);
+    <br />
+}
+
+<form action="XssAttack" method="get">
+    <input name="searchString" type="text" name="輸入框">
+    <input type="submit" value="送出">
+</form>

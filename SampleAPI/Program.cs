@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Rewrite;
@@ -33,6 +34,10 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    
+    builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
+    builder.Services.AddAuthentication().AddCookie(c => c.Cookie.HttpOnly = true);
+
     // 讓 Host 使用 Serilog 
     builder.Host.UseSerilog();
 
@@ -47,6 +52,7 @@ try
         // 將 NULL 的項目都忽略掉
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
+    builder.Services.AddControllersWithViews();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
@@ -165,9 +171,17 @@ try
     // 每一個 Request 使用 Serilog 記錄下來
     app.UseSerilogRequestLogging();
 
+    app.UseStaticFiles();
+
+    app.UseRouting();
+
     app.UseAuthorization();
 
-    app.MapControllers();
+    // app.MapControllers();
+
+    app.MapControllerRoute(
+        name: "default",
+        pattern: "{controller}/{action=Index}/{id?}");
 
     app.UseRewriter(new RewriteOptions()
         .AddRewrite("Post.aspx", "WeatherForecast", skipRemainingRules: true)
