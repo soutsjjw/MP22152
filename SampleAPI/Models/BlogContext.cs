@@ -1,19 +1,29 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Configuration;
+using Microsoft.EntityFrameworkCore;
 using SampleAPI.Helpers;
 
 namespace SampleAPI.Models;
 
 public class BlogContext : DbContext
 {
-    public BlogContext() { }
+    private readonly IConfiguration _config;
 
-    public BlogContext(DbContextOptions<BlogContext> options) : base(options) { }
+    public BlogContext(IConfiguration config)
+    {
+        _config = config;
+    }
+
+    public BlogContext(DbContextOptions<BlogContext> options, IConfiguration config) : base(options)
+    {
+        _config = config;
+    }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseSqlServer("Server=localhost,1433;Database=Blog;User Id=sa;Password=P@ssw0rd;");
+            //optionsBuilder.UseSqlServer("Server=localhost,1433;Database=Blog;User Id=sa;Password=P@ssw0rd;");
+            optionsBuilder.UseSqlServer(_config["ConnectionStrings:DefaultConnnection"]);
         }
     }
 
