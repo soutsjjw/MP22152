@@ -34,7 +34,6 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    
     builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
     builder.Services.AddAuthentication().AddCookie(c => c.Cookie.HttpOnly = true);
 
@@ -197,6 +196,23 @@ try
     {
         return "hello ep2";
     }).RequireCors("CustomPolicy1");
+
+    var antiforgery = app.Services.GetRequiredService<IAntiforgery>();
+
+    app.Use((context, next) =>
+    {
+        var requestPath = context.Request.Path.Value;
+
+        if (string.Equals(requestPath, "/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(requestPath, "/index.html", StringComparison.OrdinalIgnoreCase))
+        {
+            var tokenSet = antiforgery.GetAndStoreTokens(context);
+            context.Response.Cookies.Append("XSRF-TOKEN", tokenSet.RequestToken!,
+                new CookieOptions { HttpOnly = false });
+        }
+
+        return next(context);
+    });
 
     app.Run();
 }
