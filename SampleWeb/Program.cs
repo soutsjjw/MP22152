@@ -9,6 +9,15 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
 builder.Services.AddAuthentication().AddCookie(c => c.Cookie.HttpOnly = true);
 
+// 分散式記憶體快取
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.Name = ".AdventureWorks.Session";
+    options.IdleTimeout = TimeSpan.FromSeconds(10);
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -25,6 +34,19 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+app.Use(async(context, next) =>
+{
+    context.Response.Cookies.Append("CookieKey", "CookieValue");
+    await next.Invoke();
+});
+
+app.UseSession();
+app.Use(async (context, next) =>
+{
+    context.Session.SetString("SessionKey", "SessionValue");
+    await next.Invoke();
+});
 
 app.MapControllerRoute(
     name: "default",
