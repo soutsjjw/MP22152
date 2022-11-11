@@ -26,6 +26,7 @@
 <h1>@ViewData["Title"]</h1>
 
 <form action="XssAttack" method="get">
+    @Html.AntiForgeryToken()
     <input name="searchString" type="text" name="輸入框">
     <input type="submit" value="送出">
 </form>

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Rewrite;
@@ -116,6 +117,8 @@ try
         );
     });
 
+    builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
+
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
@@ -166,6 +169,22 @@ try
     app.UseSerilogRequestLogging();
 
     app.UseAuthorization();
+
+    var antiforgery = app.Services.GetRequiredService<IAntiforgery>();
+    app.Use((context, next) =>
+    {
+        var requestPath = context.Request.Path.Value;
+
+        if (string.Equals(requestPath, "/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(requestPath, "/index.html", StringComparison.OrdinalIgnoreCase))
+        {
+            var tokenSet = antiforgery.GetAndStoreTokens(context);
+            context.Response.Cookies.Append("XSRF-TOKEN", tokenSet.RequestToken!,
+                new CookieOptions { HttpOnly = false });
+        }
+
+        return next(context);
+    });
 
     app.MapControllers();
 

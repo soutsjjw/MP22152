@@ -44,4 +44,16 @@ public class SecurityController : Controller
 
         return View((object)searchString);
     }
+
+    public IActionResult CSRFAttack()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult CSRFAttack(string searchString)
+    {
+        return View();
+    }
 }
